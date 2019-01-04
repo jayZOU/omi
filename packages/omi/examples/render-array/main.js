@@ -1,36 +1,57 @@
 import { tag, render, WeElement } from '../../src/omi'
 
-@tag('hello-element')
-class HelloElement extends WeElement {
-  render(props) {
-    const { count, num } = props
-    return [
-      <div>Hello</div>,
-      <div>Element</div>,
-      <div>{count}</div>,
-      <div>{num}</div>
-    ]
+@tag('omi-lazyload')
+class lazyLoad extends WeElement {
+  static observe = true
+  static get data() {
+    return {}
+  }
+  css() {
+    return `
+        img{
+            display:block;
+            width:200px;
+            height:200px;
+        }
+        `
+  }
+  install() {
+    this.data = {
+      show: false
+    }
+  }
+  installed() {
+    setTimeout(() => {
+      this.data.show = true
+    }, 2000)
+  }
+
+  render() {
+    return this.data.show && this.props.children
   }
 }
 
 @tag('my-app')
 class MyApp extends WeElement {
-  data = {
-    count: 1,
-    list: [0]
-  }
   render() {
-    this.data.map((item, index) => {
-      return <hello-element key={index} num={item} />
-    })
-  }
-
-  installed() {
-    setTimeout(() => {
-      this.data.count++
-      this.data.list.push(1)
-      this.update()
-    })
+    return (
+      <div>
+        <omi-lazyload>
+          <img
+            src="http://pic28.photophoto.cn/20130818/0020033143720852_b.jpg"
+            alt=""
+          />
+          <img
+            src="http://pic28.photophoto.cn/20130818/0020033143720852_b.jpg"
+            alt=""
+          />
+          <img
+            src="http://pic28.photophoto.cn/20130818/0020033143720852_b.jpg"
+            alt=""
+          />
+        </omi-lazyload>
+      </div>
+    )
   }
 }
 

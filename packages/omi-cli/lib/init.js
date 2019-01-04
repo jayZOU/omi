@@ -13,6 +13,7 @@ var error = require("./logger").error;
 var success = require("./logger").success;
 var isCnFun = require("./utils").isCnFuc;
 var emptyFs = require("./utils").emptyFs;
+var checkAppName = require("./utils").checkAppName;
 var isSafeToCreateProjectIn = require("./utils").isSafeToCreateProjectIn;
 
 function init(args) {
@@ -30,6 +31,7 @@ function init(args) {
 		omiCli +
 			(!isCn ? " will execute init command... " : " 即将执行 init 命令...")
 	);
+	checkAppName(projectName);
 	if (existsSync(dest) && !emptyDir.sync(dest)) {
 		if (!isSafeToCreateProjectIn(dest, projectName)) {
 			process.exit(1);
@@ -63,7 +65,7 @@ function init(args) {
 					if (customPrjName) {
 						try {
 							var appPackage = require(join(dest,"package.json"));
-							appPackage.name = customPrjName;
+							appPackage.name = projectName;
 							fs.writeFile(join(dest,"package.json"), JSON.stringify(appPackage, null, 2), (err) => {
 								if (err) return console.log(err);
 							})
@@ -90,16 +92,8 @@ function init(args) {
 		console.log();
 		console.log();
 		success(`Congratulation! "${projectName}" has been created successful! `);
-		console.log(`
-
-Using the scaffold with Gulp + Webpack + Babel + BrowserSync,
-
-if you are not in ${projectName}, please run 'cd ${projectName}', then you can:
-
-    > ${chalk.bold.white("npm run dev")}         Starts the development server
-    > ${chalk.bold.white("npm run dist")}        Publish your project`);
 		console.log();
-		console.log(`${chalk.bold.cyan("Omi!")} https://alloyteam.github.io/omi`);
+		console.log(`${chalk.bold.cyan("Omi")} https://github.com/Tencent/omi`);
 	}
 }
 

@@ -7,8 +7,13 @@ import { tag } from './tag'
 import { observe } from './observe'
 import { cloneElement } from './clone-element'
 import { getHost } from './get-host'
+import { rpx } from './rpx'
+import { tick, nextTick } from './tick'
+import ModelView from './model-view'
+import { classNames, extractClass } from './class'
 
 const Component = WeElement
+const defineElement = define
 
 const omi = {
   tag,
@@ -21,11 +26,19 @@ const omi = {
   define,
   observe,
   cloneElement,
-  getHost
+  getHost,
+  rpx,
+  tick,
+  nextTick,
+  ModelView,
+  defineElement,
+  classNames,
+  extractClass
 }
 
 options.root.Omi = omi
-options.root.Omi.version = '4.0.24'
+options.root.omi = omi
+options.root.Omi.version = '5.0.19'
 
 export default omi
 
@@ -40,5 +53,12 @@ export {
   define,
   observe,
   cloneElement,
-  getHost
+  getHost,
+  rpx,
+  tick,
+  nextTick,
+  ModelView,
+  defineElement,
+  classNames,
+  extractClass
 }

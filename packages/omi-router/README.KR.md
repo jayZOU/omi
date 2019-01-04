@@ -4,6 +4,8 @@
 
 omi-router는 [Omi](http://omijs.org)의 라우터 플러그인으로 파일크기가 작고 사용하기 쉬우며 매우 강력합니다. Omi의 단일페이지 (SPA: Single Page Application) 웹을 만드는데 사용되는 솔루션입니다.
 
+[→ DEMO](https://tencent.github.io/omi/packages/omi-router/examples/spa/build/)
+
 단일페이지의 장점은 매우 분명합니다:
 
 * 페이지의 컨텐츠 로딩을 위해 페이지 새로고침할 필요 없음
@@ -47,7 +49,8 @@ define('my-app', class extends WeElement {
       this.data.tag = 'my-home'
     })
 
-    route('/about', () => {
+    route('/about', (evt) => {
+      console.log(evt.query)
       this.data.tag = 'my-about'
     })
 
@@ -55,9 +58,9 @@ define('my-app', class extends WeElement {
       this.data.tag = 'user-list'
     })
 
-    route('/user/:name/category/:category', (params) => {
+    route('/user/:name/category/:category', (evt) => {
       this.data.tag = 'my-user'
-      this.data.params = params
+      this.data.params = evt.params
     })
 
     route('*', function () {
@@ -85,6 +88,7 @@ define('my-app', class extends WeElement {
           <li><a href="#/" >Home</a></li>
           <li><a href="#/about" >About</a></li>
           <li><a href="#/user-list" >UserList</a></li>
+          <li><a href="#/about?name=dntzhang&age=18" >About Dntzhang</a></li>
         </ul>
         <div id="view">
           <data.tag params={data.params} />
@@ -103,8 +107,19 @@ render(<my-app />, "#container")
 | Rule | Path | route.params |
 |---------|------|--------|
 | /user/:name | /user/dntzhang | `{ name: 'dntzhang' }` |
-| /user/:name/category/:category | /user/dntzhang/category/js | `{ name: 'dntzhang', category: js }` |
+| /user/:name/category/:category | /user/dntzhang/category/js | `{ name: 'dntzhang', category: 'js' }` |
 
+## With Query Parameter
+
+```html
+<li><a href="#/about?name=dntzhang&age=18" >About</a></li>
+```
+```js
+route('/about', (evt) => {
+  //output { name: 'dntzhang', age : '18' } when click the a tag above
+  console.log(evt.query)
+})
+```
 
 ### 레퍼런스
 

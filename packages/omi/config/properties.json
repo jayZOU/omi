@@ -1,6 +1,6 @@
 {
   "props": {
-    "cname": 33,
+    "cname": 37,
     "props": {
       "$_dirty": "__d",
       "$_disable": "__x",
@@ -32,7 +32,11 @@
       "$_useMap": "D",
       "$___touchX": "F",
       "$___touchY": "G",
-      "$___scrollTop": "H"
+      "$___scrollTop": "H",
+      "$__elementId": "I",
+      "$_willUpdate": "J",
+      "$_preCss": "K",
+      "$_host": "L"
     }
   },
   "vars": {

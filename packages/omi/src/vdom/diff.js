@@ -41,24 +41,25 @@ export function diff(dom, vnode, context, mountAll, parent, componentRoot) {
       let maxLength = domLength >= vnodeLength ? domLength : vnodeLength
       parentNode = dom[0].parentNode
       for (let i = 0; i < maxLength; i++) {
-        ret.push(idiff(dom[i], vnode[i], context, mountAll, componentRoot))
+        let ele = idiff(dom[i], vnode[i], context, mountAll, componentRoot)
+        ret.push(ele)
+        if (i > domLength - 1) {
+          parentNode.appendChild(ele)
+        }
       }
     } else {
       vnode.forEach(function(item) {
-        ret.push(idiff(dom, item, context, mountAll, componentRoot))
-      })
-    }
-    if (parent) {
-      ret.forEach(function(vnode) {
-        parent.appendChild(vnode)
-      })
-    } else if (isArray(dom)) {
-      dom.forEach(function(node) {
-        parentNode.appendChild(node)
+        let ele = idiff(dom, item, context, mountAll, componentRoot)
+        ret.push(ele)
+        parent && parent.appendChild(ele)
       })
     }
   } else {
-    ret = idiff(dom, vnode, context, mountAll, componentRoot)
+    if (isArray(dom)) {
+      ret = idiff(dom[0], vnode, context, mountAll, componentRoot)
+    } else {
+      ret = idiff(dom, vnode, context, mountAll, componentRoot)
+    }
     // append the element if its a new parent
     if (parent && ret.parentNode !== parent) parent.appendChild(ret)
   }
@@ -176,7 +177,7 @@ function idiff(dom, vnode, context, mountAll, componentRoot) {
   }
 
   // Apply attributes/props from VNode to the DOM Element:
-  diffAttributes(out, vnode.attributes, props)
+  diffAttributes(out, vnode.attributes, props, vnode.children)
   if (out.props) {
     out.props.children = vnode.children
   }
@@ -328,10 +329,14 @@ export function removeChildren(node) {
  *	@param {Object} attrs		The desired end-state key-value attribute pairs
  *	@param {Object} old			Current/previous attributes (from previous VNode or element's prop cache)
  */
-function diffAttributes(dom, attrs, old) {
+function diffAttributes(dom, attrs, old, children) {
   let name
   let update = false
   let isWeElement = dom.update
+  let oldClone
+  if (dom.receiveProps) {
+    oldClone = Object.assign({}, old)
+  }
   // remove attributes no longer present on the vnode by setting them to undefined
   for (name in old) {
     if (!(attrs && attrs[name] != null) && old[name] != null) {
@@ -345,9 +350,19 @@ function diffAttributes(dom, attrs, old) {
 
   // add new & update changed attributes
   for (name in attrs) {
-    //diable when using store system?
-    //!dom.store &&
     if (isWeElement && typeof attrs[name] === 'object') {
+      if (name === 'style') {
+        setAccessor(dom, name, old[name], (old[name] = attrs[name]), isSvgMode)
+      }
+      if (dom.receiveProps) {
+        try {
+          old[name] = JSON.parse(JSON.stringify(attrs[name]))
+        } catch (e) {
+          console.warn(
+            'When using receiveProps, you cannot pass prop of cyclic dependencies down.'
+          )
+        }
+      }
       dom.props[npn(name)] = attrs[name]
       update = true
     } else if (
@@ -365,5 +380,10 @@ function diffAttributes(dom, attrs, old) {
     }
   }
 
-  dom.parentNode && update && isWeElement && dom.update()
+  if (isWeElement && dom.parentNode) {
+    if (update || children.length > 0) {
+      dom.receiveProps(dom.props, dom.data, oldClone)
+      dom.update()
+    }
+  }
 }

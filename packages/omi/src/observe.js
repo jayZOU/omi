@@ -1,4 +1,5 @@
 import JSONProxy from './proxy'
+import { fireTick } from './tick'
 
 export function observe(target) {
   target.observe = true
@@ -6,15 +7,20 @@ export function observe(target) {
 
 export function proxyUpdate(ele) {
   let timeout = null
-  ele.data = new JSONProxy(ele.data).observe(false, info => {
-    if (info.oldValue === info.value) {
+  ele.data = new JSONProxy(ele.data).observe(false, () => {
+    if (ele._willUpdate) {
       return
     }
+    if (ele.constructor.mergeUpdate) {
+      clearTimeout(timeout)
 
-    clearTimeout(timeout)
-
-    timeout = setTimeout(() => {
+      timeout = setTimeout(() => {
+        ele.update()
+        fireTick()
+      }, 0)
+    } else {
       ele.update()
-    }, 16.6)
+      fireTick()
+    }
   })
 }

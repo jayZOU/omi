@@ -10,9 +10,12 @@ English | [简体中文](./main-concepts.cn.md) | [한국어](./main-concepts.kr
   - [CSS](#css)
   - [Lifecycle](#lifecycle)
   - [Ref](#ref)
+  - [extractClass](#extractclass)
   - [Store](#store)
   - [Slot](#slot)
+  - [noSlot](#noslot)
   - [Observe](#observe)
+  - [MergeUpdate](#mergeupdate)
   - [Use](#use)
   - [SSR](#ssr)
 
@@ -107,6 +110,15 @@ define('my-first-element', class extends WeElement {
 
 render(<my-first-element name="world"></my-first-element>, 'body')
 ```
+
+Through props, you can pass style or class to the root node, for example:
+
+```jsx
+<el-button onClick={this.onClick} style="color:red;">默认按钮1</el-button>
+<el-button type="primary" style={{color:'red'}}>主要按钮</el-button>
+```
+
+ [→ click here](https://github.com/Tencent/omi/commit/cdea37ca7a15d109718fcc3731d6fe6d1548ffab)
 
 ### Event
 
@@ -211,8 +223,10 @@ define('el-button', class extends WeElement {
 | `installed`      | after the component gets mounted to the DOM  |
 | `uninstall`      | prior to removal from the DOM                |
 | `beforeUpdate`   | before update                           |
-| `afterUpdate`    | after update                             |
+| `afterUpdate`    | after update  (deprecated)                           |
+| `updated`    | after update                             |
 | `beforeRender`   | before `render()`                           |
+| `receiveProps`   | parent element re-render will trigger it      |
 
 For example:
 
@@ -268,6 +282,30 @@ render(<my-first-element></my-first-element>, 'body')
 
 Add `ref={e => { this.anyNameYouWant = e }}` to attrs of the element, then you can get it by `this.anyNameYouWant`.
 
+### extractClass
+
+```js
+import { classNames, extractClass } from 'omi'
+
+define('my-element', class extends WeElement {
+  render(props) {
+    //extractClass will take out this class/className from props and merge the other classNames to obj
+    const cls = extractClass(props, 'o-my-class', {
+      'other-class': true,
+      'other-class-b': this.xxx === 1
+    })
+
+    return (
+      <div {...cls} {...props}>
+        Test
+      </div>
+    )
+  }
+})
+  
+```
+
+The `classNames` is the same as [classnames](https://github.com/JedWatson/classnames) of [npm](https://www.npmjs.com/package/classnames).
 
 ### Store
 
@@ -376,6 +414,51 @@ render(<my-app></my-app>, 'body')
 
 [→ Slot MDN](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_templates_and_slots#Adding_flexibility_with_slots)
 
+## noSlot
+
+For writing omi plugins, noSlot is very useful. He will not insert redundant DOM into HTML and you can get the vdom in the plugin by props.children.
+
+```js
+import { define, render, WeElement } from 'omi'
+
+define('fancy-tabs', class extends WeElement {
+  static noSlot = true
+
+  render() {
+    return [
+      <div id="tabs">
+        <slot id="tabsSlot" name="title" />
+      </div>,
+      <div id="panels">
+        <slot id="panelsSlot" />
+      </div>,
+      <div>Show me only when noSlot is true!</div>
+    ]
+  }
+})
+
+define('my-app', class extends WeElement {
+  render() {
+    return (
+      <div>
+        <fancy-tabs>
+          <button slot="title">Title</button>
+          <button slot="title" selected>
+            Title 2
+          </button>
+          <button slot="title">Title 3</button>
+          <section>content panel 1</section>
+          <section>content panel 2</section>
+          <section>content panel 3</section>
+        </fancy-tabs>
+      </div>
+    )
+  }
+})
+
+render(<my-app />, 'body')
+```
+
 ## Observe
 
 ### Omi Observe
@@ -403,7 +486,7 @@ define("my-app", class extends WeElement {
   }
 })
 ```
-
+<!-- 
 If you want to be compatible with IE11, please use the `omi-mobx` instead of omi's own obersve.
 
 ### Omi Mobx
@@ -431,7 +514,109 @@ class MyApp extends WeElement {
     )
   }
 }
+``` -->
+
+### MergeUpdate
+
+If `observe` and `mergeUpdate` is used, the view does not change immediately after the data changes. 
+
+```js
+define('todo-list', class extends WeElement {
+  static observe = true
+
+  static mergeUpdate = true
+
+  ....
+})
 ```
+
+If you want to get the real changed dom, you can use tick or nextTick.
+
+```js
+import { render, WeElement, define, tick, nextTick } from 'omi'
+
+define('todo-list', class extends WeElement {
+  render(props) {
+    return (
+      <ul>
+        {props.items.map(item => (
+          <li key={item.id}>{item.text}</li>
+        ))}
+      </ul>
+    )
+  }
+})
+
+define('todo-app', class extends WeElement {
+  static observe = true
+
+  static get data() {
+    return { items: [], text: '' }
+  }
+  install() {
+    tick(() => {
+      console.log('tick')
+    })
+
+    tick(() => {
+      console.log('tick2')
+    })
+  }
+
+  beforeRender() {
+    nextTick(() => {
+      console.log('nextTick')
+    })
+
+    // don't using tick in beforeRender or beforeUpdate or render or afterUpdate
+    // tick(() => {
+    //   console.log(Math.random())
+    // })
+  }
+
+  installed() {
+    console.log('installed')
+  }
+
+  render() {
+    console.log('render')
+    return (
+      <div>
+        <h3>TODO</h3>
+        <todo-list items={this.data.items} />
+        <form onSubmit={this.handleSubmit}>
+          <input
+            id="new-todo"
+            onChange={this.handleChange}
+            value={this.data.text}
+          />
+          <button>Add #{this.data.items.length + 1}</button>
+        </form>
+      </div>
+    )
+  }
+
+  handleChange = e => {
+    this.data.text = e.target.value
+  }
+
+  handleSubmit = e => {
+    e.preventDefault()
+    if (!this.data.text.trim().length) {
+      return
+    }
+    this.data.items.push({
+      text: this.data.text,
+      id: Date.now()
+    })
+    this.data.text = ''
+  }
+})
+
+render(<todo-app />, 'body')
+```
+
+You can also execute `this.update` manually and then get the dom after update. 
 
 ### Use
 
